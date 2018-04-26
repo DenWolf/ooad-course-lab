@@ -1,0 +1,43 @@
+body {
+    text-align: center; 
+}
+
+.form-container {
+	float: left;
+	position: relative;
+	left: 50%;
+}
+
+.form-container > * {
+	position: relative;
+	left: -50%;
+	padding: 10px;
+}
+
+form > label {
+	clear: both;
+	display: block;
+}
+
+input[type="text"], input[type="password"] {
+	margin: 2mm;
+	margin-right: 0;
+	width: 6cm;
+}
+
+.hidden_errmsg {
+	visibility: hidden;
+}
+
+.errmsg {
+	color: red;
+}
+
+.hidden_sub_errmsg {
+	display: none;
+}
+
+.sub_errmsg {
+
+}
+

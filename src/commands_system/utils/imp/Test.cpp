@@ -12,6 +12,7 @@
 
 #include "../Test.h"
 #include "../Exception.h"
+#include "../formatTypeidName.h"
 
 #include <stddef.h>
 #include <vector>
@@ -47,23 +48,9 @@ struct locals_t {
 
 
 
-
-static string format_typeid_name(const string &name) {
-  size_t i;
-	if ((i = name.find_first_of(' ')) != string::npos) {
-		return name.substr(i+1);
-	}
-	return name;
-}
-
-
-
-
-
-
 static void show_failed_test(Test *test, size_t part) {
 	std::cerr <<
-		typeid(*test).name() << "." << parts[part] << "(): FATAL ERROR\n";
+		formatTypeidName(typeid(*test).name()) << "." << parts[part] << "(): FATAL ERROR\n";
 }
 
 
@@ -80,11 +67,11 @@ static void check_at_end(size_t tests_ok) {
 
 	if (tests_ok != size) {
 		std::cerr << tests_ok << "/" << size << " tests ok\n";
+		_CrtSetDbgFlag((_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF)  &  ~_CRTDBG_LEAK_CHECK_DF);
 		{
 		  string line;
 			std::getline(std::cin, line);
 		}
-		_CrtSetDbgFlag((_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF)  &  ~_CRTDBG_LEAK_CHECK_DF);
 		exit(1);
 	}
 
@@ -108,11 +95,12 @@ public:
 
 const char TestMemoryLeakException::message[] = "\n"
 	"\n"
-	"\tmemory leak detected after test had passed\n"
+	"\tmemory leak detected after test had passed (OBJECTS DUMP ABOVE)\n"
 	"\n"
 	"\tpossible reasons:\n"
 	"\t\tno delete after new\n"
 	"\t\tno free() after malloc()\n"
+	"\t\tclass has no virtual destructor\n"
 	"\t\tglobal variable used\n";
 
 
@@ -143,16 +131,21 @@ void Test::All_inner(void *locals) {
 					part = 1; test->do_test();
 					part = 2; test->after();
 					_CrtMemCheckpoint(&s2);
-					if (_CrtMemDifference( &s3, &s1, &s2))
+					if (_CrtMemDifference(&s3, &s1, &s2)) {
+					  int prev = _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+						_CrtMemDumpStatistics(&s3);
+						_CrtMemDumpAllObjectsSince(&s3);
+						_CrtSetReportMode(_CRT_WARN, prev);
 						throw TestMemoryLeakException();
+					}
 					++tests_ok;
 				}
 			}
 		} catch (const Exception &e) {
 			std::cerr <<
-				format_typeid_name(typeid(*test).name()) <<
+				formatTypeidName(typeid(*test).name()) <<
 				"." << parts[part] << "(): " <<
-				format_typeid_name(typeid(e).name());
+				formatTypeidName(typeid(e).name());
 
 			if (e.what()) {
 				std::cerr << "{\"" << e.what() << "\"}";
